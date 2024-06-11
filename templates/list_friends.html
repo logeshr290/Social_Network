@@ -1,0 +1,200 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>List Friends</title>
+    <style>
+        body {
+            font-family: Calibri, sans-serif;
+            background-color: #b2dba1;
+            color: #333;
+            margin: 10px;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2, h5 {
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        li {
+            margin-bottom: 5px;
+        }
+
+        form {
+            margin-bottom: 15px;
+        }
+
+        input[type="text"], button {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .top-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            text-align: right;
+        }
+
+        .friend-request-form {
+            display: inline-block;
+            vertical-align: center;
+        }
+
+        .friend-request-button {
+            margin-left: 5px;
+        }
+
+        .pending-request {
+            display: flex;
+            align-items: center;
+        }
+
+        .request-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .request-buttons form {
+            margin-left: 10px;
+        }
+
+        .username-email {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+        }
+        .button {
+            padding: 5px 10px;
+            border-radius: 5px;
+            background-color: black;
+            color: white;
+            border: none;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            transition-duration: 0.4s;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .profile-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-right">
+        {% if user.is_authenticated %}
+            <p>Welcome, {{ user.username }}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="button" type="submit">Logout</button>
+                </form>
+            </p>
+        {% else %}
+            <p><a class="button" href="{% url 'login' %}">Login</a></p>
+        {% endif %}
+    </div>
+
+    <center><h1>Social Network App</h1></center>
+
+    <form method="get" action="{% url 'list-friends' %}">
+        <input type="text" name="search" placeholder="Search users" value="{{ search_query }}">
+        <button type="submit">Search</button>
+    </form>
+
+    <h2>My Friends</h2>
+    <ul>
+        {% for friend in friends %}
+            <li>{{ friend.username }} ({{ friend.email }})</li>
+        {% empty %}
+            <li>No friends found.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Available Users</h2>
+    <h5>You can send friend requests to the below users.</h5>
+    <ul>
+        {% for user in potential_friends %}
+            <li>
+                <div class="pending-request">
+                    <div class="username-email">
+                        {{ user.username }} ({{ user.email }})
+                        <form class="friend-request-form" method="post" action="{% url 'send-friend-request' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="receiver_email" value="{{ user.email }}">
+                            <button type="submit" class="button">Send Request</button>
+                        </form>
+                    </div>
+                </div>
+            </li>
+        {% empty %}
+            <li>No friends found.</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Your Pending Friend Requests</h2>
+    <ul>
+        {% for request in pending_requests %}
+            <li class="pending-request">
+                <div>
+                    {{ request.sender.username }} ({{ request.sender.email }})
+                </div>
+                <div class="request-buttons">
+                    <form method="post" action="{% url 'accept-friend-request' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="sender_id" value="{{ request.sender.id }}">
+                        <button type="submit" class="button">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'reject-friend-request' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="sender_id" value="{{ request.sender.id }}">
+                        <button type="submit" class="button">Reject</button>
+                    </form>
+                </div>
+            </li>
+        {% empty %}
+            <li>No pending friend requests.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
