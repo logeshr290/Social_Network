@@ -1,4 +1,4 @@
-# Social Network Application
+# LokiBook Social Network Application
 
 This Django project implements a social networking application with features like user authentication, friend requests, Accept / Reject of friend requests, Searching of new friends.
 
@@ -6,7 +6,7 @@ This Django project implements a social networking application with features lik
 
 1. Clone the repository:
 
-	git clone https://github.com/logeshr290/Social_Network.git
+	git clone https://github.com/logeshr290/soc_network.git
 
 2. Navigate to the project directory:
 
