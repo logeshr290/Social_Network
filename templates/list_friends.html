@@ -1,8 +1,7 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>List Friends</title>
+    <title>LokiBook | Home</title>
     <style>
         body {
             font-family: Calibri, sans-serif;
@@ -13,9 +12,21 @@
         }
 
         .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 250px;
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         h1, h2, h5 {
@@ -45,7 +56,7 @@
 
         button {
             cursor: pointer;
-            background-color: #007bff;
+            background-color: black;
             color: #fff;
             border: none;
         }
@@ -90,7 +101,7 @@
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                flex-direction: column;
             }
         }
         .button {
@@ -119,6 +130,34 @@
             object-fit: cover;
             margin-right: 10px;
         }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination a {
+            margin: 0 5px;
+            padding: 8px 16px;
+            text-decoration: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+        }
+
+        .pagination a:hover {
+            background-color: #0056b3;
+        }
+
+        .pagination .current {
+            margin: 0 5px;
+            padding: 8px 16px;
+            text-decoration: none;
+            background-color: #0056b3;
+            color: white;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -135,66 +174,169 @@
         {% endif %}
     </div>
 
-    <center><h1>Social Network App</h1></center>
+    <center><h1>LokiBook Social Network App</h1></center>
 
     <form method="get" action="{% url 'list-friends' %}">
         <input type="text" name="search" placeholder="Search users" value="{{ search_query }}">
         <button type="submit">Search</button>
     </form>
 
-    <h2>My Friends</h2>
-    <ul>
-        {% for friend in friends %}
-            <li>{{ friend.username }} ({{ friend.email }})</li>
-        {% empty %}
-            <li>No friends found.</li>
-        {% endfor %}
-    </ul>
+    <div class="container">
+        <div class="column">
+            <h2>My Friends</h2>
+            <ul>
+                {% for friend in friends %}
+                    <li>{{ friend.username }} ({{ friend.email }})</li>
+                {% empty %}
+                    <li>No friends found.</li>
+                {% endfor %}
+            </ul>
+            <h2>Your Pending Friend Requests</h2>
+            <ul>
+                {% for request in pending_requests %}
+                    <li class="pending-request">
+                        <div>
+                            {{ request.sender.username }} ({{ request.sender.email }})
+                        </div>
+                        <div class="request-buttons">
+                            <form onsubmit="acceptFriendRequest(event, {{ request.sender.id }}, this.closest('li'))">
+                                <button type="submit" class="button">Accept</button>
+                            </form>
+                            <form onsubmit="rejectFriendRequest(event, {{ request.sender.id }}, this.closest('li'))">
+                                <button type="submit" class="button">Reject</button>
+                            </form>
+                        </div>
+                    </li>
+                {% empty %}
+                    <li>No pending friend requests.</li>
+                {% endfor %}
+            </ul>
+        </div>
 
-    <h2>Available Users</h2>
-    <h5>You can send friend requests to the below users.</h5>
-    <ul>
-        {% for user in potential_friends %}
-            <li>
-                <div class="pending-request">
-                    <div class="username-email">
-                        {{ user.username }} ({{ user.email }})
-                        <form class="friend-request-form" method="post" action="{% url 'send-friend-request' %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="receiver_email" value="{{ user.email }}">
-                            <button type="submit" class="button">Send Request</button>
-                        </form>
-                    </div>
-                </div>
-            </li>
-        {% empty %}
-            <li>No friends found.</li>
-        {% endfor %}
-    </ul>
+        <div class="column">
+            <h2>Available Users</h2>
+            <h5>You can send friend requests to the below users.</h5>
+            <ul>
+                {% for user in page_obj %}
+                    <li>
+                        <div class="pending-request">
+                            <div class="username-email">
+                                {{ user.username }} ({{ user.email }})
+                                <form onsubmit="sendFriendRequest(event, '{{ user.email }}', this.closest('li'))">
+                                    <button type="submit" class="button">Send Request</button>
+                                </form>
+                            </div>
+                        </div>
+                    </li>
+                {% empty %}
+                    <li>No users found.</li>
+                {% endfor %}
+            </ul>
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}">Previous</a>
+                {% endif %}
+                <span class="current">{{ page_obj.number }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}">Next</a>
+                {% endif %}
+            </div>
+        </div>
 
-    <h2>Your Pending Friend Requests</h2>
-    <ul>
-        {% for request in pending_requests %}
-            <li class="pending-request">
-                <div>
-                    {{ request.sender.username }} ({{ request.sender.email }})
-                </div>
-                <div class="request-buttons">
-                    <form method="post" action="{% url 'accept-friend-request' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="sender_id" value="{{ request.sender.id }}">
-                        <button type="submit" class="button">Accept</button>
-                    </form>
-                    <form method="post" action="{% url 'reject-friend-request' %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="sender_id" value="{{ request.sender.id }}">
-                        <button type="submit" class="button">Reject</button>
-                    </form>
-                </div>
-            </li>
-        {% empty %}
-            <li>No pending friend requests.</li>
-        {% endfor %}
-    </ul>
+        <div class="column">
+            <h2>Sent Friend Requests</h2>
+            <ul>
+                {% for request in sent_requests %}
+                    <li>{{ request.receiver.username }} ({{ request.receiver.email }})</li>
+                {% empty %}
+                    <li>No sent friend requests.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function sendFriendRequest(event, receiverEmail, listItem) {
+            event.preventDefault();
+            fetch("{% url 'send-friend-request' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ receiver_email: receiverEmail })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    listItem.remove();
+                    alert(data.message);
+                    location.reload();
+                }
+            });
+        }
+
+        function acceptFriendRequest(event, senderId, listItem) {
+            event.preventDefault();
+            fetch("{% url 'accept-friend-request' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ sender_id: senderId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    listItem.remove();
+                    location.reload();
+                }
+            });
+        }
+
+        function rejectFriendRequest(event, senderId, listItem) {
+            event.preventDefault();
+            fetch("{% url 'reject-friend-request' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ sender_id: senderId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    listItem.remove();
+                    location.reload();
+                }
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
 </body>
 </html>
