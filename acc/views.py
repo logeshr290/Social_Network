@@ -5,6 +5,8 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Q
+from django.http import JsonResponse
+from django.views import View
 from django.core.paginator import Paginator
 
 from rest_framework import generics, permissions, status
@@ -35,7 +37,9 @@ class UserSignupView(generics.CreateAPIView):
             user = form.save()
             login(request, user)
             return redirect(reverse('home'))
-        return render(request, 'signup.html', {'form': form})
+        else:
+            error_message = "Error occurred while signing up."
+            return render(request, 'signup.html', {'form': form, 'error_message': error_message})
 
 class UserLoginView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
@@ -53,25 +57,27 @@ class UserLoginView(generics.CreateAPIView):
             if user is not None:
                 login(request, user)
                 return redirect(reverse('list-friends'))
-        return render(request, 'login.html', {'form': form})
+        error_message = "Invalid email or password. Please try again."
+        return render(request, 'login.html', {'form': form, 'error_message': error_message})
+    
+logger = logging.getLogger(__name__)
 
-class UserSearchView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserSerializer
-    pagination_class = PageNumberPagination
 
-    def get_queryset(self):
-        query = self.request.query_params.get('q', '')
+class UserSearchView(View):
+    def get(self, request):
+        query = request.GET.get('q', '')
         if not query:
-            logging.info("Empty query parameter")
-            return User.objects.none()
+            return JsonResponse({'results': []})
 
-        logging.info(f"Query parameter: {query}")
-        return User.objects.filter(
+        users = User.objects.filter(
             Q(email__iexact=query) |
             Q(username__icontains=query) |
             Q(first_name__icontains=query)
         )
+
+        serialized_users = [{'username': user.username, 'email': user.email} for user in users]
+
+        return JsonResponse({'results': serialized_users})
 
 class ListFriendsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -86,7 +92,9 @@ class ListFriendsView(APIView):
         search_query = request.GET.get('search', '')
         potential_friends = User.objects.exclude(
             Q(id=user.id) | Q(sent_requests__receiver=user, sent_requests__status='accepted') |
-            Q(received_requests__sender=user, received_requests__status='accepted')
+            Q(received_requests__sender=user, received_requests__status='accepted') |
+            Q(received_requests__sender=user, received_requests__status='pending') |
+            Q(sent_requests__receiver=user, sent_requests__status='pending')
         ).order_by('username')
         if search_query:
             potential_friends = potential_friends.filter(
@@ -109,16 +117,18 @@ class ListFriendsView(APIView):
         }
         return render(request, 'list_friends.html', context)
 
-    def update_potential_friends(self, user):
+
+    '''def update_potential_friends(self, user):
         potential_friends = User.objects.exclude(
             Q(id=user.id) | Q(sent_requests__receiver=user, sent_requests__status='accepted') |
             Q(received_requests__sender=user, received_requests__status='accepted')
         )
-        return potential_friends
+        return potential_friends'''
 
 def logout_view(request):
     logout(request)
     return redirect(reverse('home'))
+
 
 class SendFriendRequestView(APIView):
     permission_classes = [IsAuthenticated]
@@ -126,21 +136,39 @@ class SendFriendRequestView(APIView):
     def post(self, request):
         sender = request.user
         receiver_email = request.data.get('receiver_email')
+
         try:
             receiver = User.objects.get(email=receiver_email)
         except User.DoesNotExist:
             return Response({"error": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
         if sender.sent_requests.filter(created_at__gte=timezone.now() - timedelta(minutes=1)).count() >= 3:
-            return Response({"error": "You cannot send more than 3 friend requests within a minute."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+            return Response({"error": "You cannot send more than 3 friend requests within a minute."},
+                            status=status.HTTP_429_TOO_MANY_REQUESTS)
 
         if FriendRequest.objects.filter(sender=sender, receiver=receiver).exists():
             return Response({"error": "Friend request already sent."}, status=status.HTTP_400_BAD_REQUEST)
 
-
         friend_request = FriendRequest(sender=sender, receiver=receiver)
         friend_request.save()
-        return Response({"message": "Friend request sent."}, status=status.HTTP_201_CREATED)
+
+        # Update sent requests and potential friends
+        sent_requests = FriendRequest.objects.filter(sender=sender, status='pending')
+        potential_friends = User.objects.exclude(
+            Q(id=sender.id) | Q(sent_requests__receiver=sender, sent_requests__status='accepted') |
+            Q(received_requests__sender=sender, received_requests__status='accepted') |
+            Q(received_requests__sender=sender, received_requests__status='pending') |
+            Q(sent_requests__receiver=sender, sent_requests__status='pending')
+        ).distinct()
+
+        serialized_sent_requests = [{'email': req.receiver.email, 'status': req.status} for req in sent_requests]
+        serialized_potential_friends = [{'username': user.username, 'email': user.email} for user in potential_friends]
+
+        return Response({
+            "message": "Friend request sent.",
+            "sent_requests": serialized_sent_requests,
+            "potential_friends": serialized_potential_friends
+        }, status=status.HTTP_201_CREATED)
 
 class AcceptFriendRequestView(APIView):
     permission_classes = [IsAuthenticated]
