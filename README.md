@@ -118,22 +118,33 @@ This Django project implements a social networking application with features lik
    - Click "Send Request" to send a friend request.
    - **API Request:** `POST /api/send-friend-request/`
      - Request Body: `{"receiver_email": "friend@example.com"}`
-     - **Response:** `{"message": "Friend request sent."}` or `{"error": "Error message."}`
+     - **Response:** 
+       - `{"message": "Friend request sent."}` if successful.
+       - `{"error": "Error message."}` if unsuccessful.
+     - **Updates:** 
+       - Sent requests list is updated to include the new request.
+       - Available users list is updated to remove the friend's profile.
 
 8. **Accepting Friend Requests:**
    - Click "Accept" for a pending request to accept it.
    - **API Request:** `POST /api/accept-friend-request/`
      - Request Body: `{"sender_id": "sender_id"}`
-     - **Response:** `{"message": "Friend request accepted."}` or `{"error": "Error message."}`
+     - **Response:** 
+       - `{"message": "Friend request accepted."}` if successful.
+       - `{"error": "Error message."}` if unsuccessful.
+     - **Updates:** 
+       - Sent requests list is updated to remove the accepted request.
+       - Friends list is updated to include the new friend.
 
 9. **Rejecting Friend Requests:**
    - Click "Reject" for a pending request to reject it.
    - **API Request:** `POST /api/reject-friend-request/`
      - Request Body: `{"sender_id": "sender_id"}`
-     - **Response:** `{"message": "Friend request rejected."}` or `{"error": "Error message."}`
+     - **Response:** 
+       - `{"message": "Friend request rejected."}` if successful.
+       - `{"error": "Error message."}` if unsuccessful.
+     - **Updates:** 
+       - Sent requests list is updated to remove the rejected request.
 
 10. **Logging Out:**
     - Click "Log Out" to log out and return to the welcome page.
-
-
-
