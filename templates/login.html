@@ -14,7 +14,7 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 350px; /* Adjust width as needed */
+            width: 350px; 
             margin: 0 auto;
         }
         .card h1 {
@@ -33,6 +33,9 @@
             padding: 10px;
             border-radius: 5px;
             border: 1px solid #ccc;
+        }
+        .form-group input.error {
+            border-color: red;
         }
         .form-group button {
             width: 100%;
@@ -60,18 +63,24 @@
             {% csrf_token %}
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="Email" required value="">
+                <input type="email" id="email" name="email" placeholder="Email" required value="{{ form.email.value|default_if_none:'' }}" class="{% if form.email.errors %}error{% endif %}">
+                {% for error in form.email.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Password" required>
+                <input type="password" id="password" name="password" placeholder="Password" required class="{% if form.password.errors %}error{% endif %}">
+                {% for error in form.password.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
             </div>
             <div class="form-group">
                 <button type="submit">Log In</button>
             </div>
         </form>
-        {% if form.errors %}
-            <p class="error-message">{{ form.errors }}</p>
+        {% if form.non_field_errors %}
+            <p class="error-message">{{ form.non_field_errors }}</p>
         {% endif %}
     </div>
 </body>
