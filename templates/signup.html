@@ -35,6 +35,9 @@
             border-radius: 5px;
             border: 1px solid #ccc;
         }
+        .form-group input.error {
+            border-color: red;
+        }
         .form-group button {
             width: 100%;
             padding: 8px;
@@ -61,26 +64,38 @@
             {% csrf_token %}
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="Email" required value="">
+                <input type="email" id="email" name="email" placeholder="Email" required value="{{ form.email.value|default_if_none:'' }}" class="{% if form.email.errors %}error{% endif %}">
+                {% for error in form.email.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
             </div>
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="Username" required value="">
+                <input type="text" id="username" name="username" placeholder="Username" required value="{{ form.username.value|default_if_none:'' }}" class="{% if form.username.errors %}error{% endif %}">
+                {% for error in form.username.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Password" required>
+                <input type="password" id="password" name="password" placeholder="Password" required class="{% if form.password.errors %}error{% endif %}">
+                {% for error in form.password.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
             </div>
             <div class="form-group">
                 <label for="confirm_password">Confirm Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" required>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" required class="{% if form.confirm_password.errors %}error{% endif %}">
+                {% for error in form.confirm_password.errors %}
+                    <span class="error-message">{{ error }}</span>
+                {% endfor %}
             </div>
             <div class="form-group">
                 <button type="submit">Sign Up</button>
             </div>
         </form>
-        {% if form.errors %}
-            <p class="error-message">{{ form.errors }}</p>
+        {% if form.non_field_errors %}
+            <p class="error-message">{{ form.non_field_errors }}</p>
         {% endif %}
     </div>
 </body>
