@@ -88,7 +88,7 @@
 
         .request-buttons {
             display: flex;
-            gap: 5px;
+            gap: 0;
         }
 
         .request-buttons form {
@@ -163,7 +163,8 @@
 <body>
     <div class="top-right">
         {% if user.is_authenticated %}
-            <p>Welcome, {{ user.username }}
+            <p>Welcome, {{ user.username }}<br> 
+                {{ user.email }}
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
                     <button class="button" type="submit">Logout</button>
