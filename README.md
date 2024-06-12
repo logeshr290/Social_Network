@@ -88,17 +88,26 @@ This Django project implements a social networking application with features lik
 2. **Signing In:**
    - Click "Sign In" to go to the sign-in page.
    - Provide Email, Username, Password, and Confirm Password.
+   - **Validation:**
+     - Fields cannot be left blank.
+     - Email or Username should not already exist.
    - **API Request:** `POST /api/signup/`
      - Request Body: `{"email": "user@example.com", "username": "username", "password": "password", "confirm_password": "password"}`
-     - **Response:** `{"message": "User signed up successfully."}`
+     - **Response:** 
+       - `{"message": "User signed up successfully."}` if successful.
+       - `{"error": "Error message."}` if validation fails.
    - Redirected to the welcome page after signing up.
 
 3. **Logging In:**
    - Click "Log In" on the welcome page to go to the login page.
    - Enter Email and Password.
+   - **Validation:**
+     - Invalid Email or Password.
    - **API Request:** `POST /api/login/`
      - Request Body: `{"email": "user@example.com", "password": "password"}`
-     - **Response:** `{"message": "User logged in successfully."}` or `{"error": "Invalid credentials."}`
+     - **Response:** 
+       - `{"message": "User logged in successfully."}` if successful.
+       - `{"error": "Invalid credentials."}` if validation fails.
    - Redirected to the home page (Friends Page) after successful login.
 
 4. **Home Page (Friends Page):**
@@ -114,13 +123,16 @@ This Django project implements a social networking application with features lik
    - **API Request:** `GET /api/friends/`
      - **Response:** Paginated list of friends.
 
-7. **Sending Friend Requests:**
+5. **Sending Friend Requests:**
    - Click "Send Request" to send a friend request.
+   - **Validation:**
+     - User can only send three requests within a minute.
+     - Request already sent to the same user.
    - **API Request:** `POST /api/send-friend-request/`
      - Request Body: `{"receiver_email": "friend@example.com"}`
      - **Response:** 
        - `{"message": "Friend request sent."}` if successful.
-       - `{"error": "Error message."}` if unsuccessful.
+       - `{"error": "Error message."}` if validation fails.
      - **Updates:** 
        - Sent requests list is updated to include the new request.
        - Available users list is updated to remove the friend's profile.
